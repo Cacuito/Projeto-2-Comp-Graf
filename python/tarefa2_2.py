@@ -25,20 +25,18 @@ renderer: Renderer
 camera: Camera3D
 scene: Scene
 
-# Posição inicial da câmara em perspectiva (visão inclinada e superior)
+# Posição inicial da câmara em perspectiva
 viewer_pos: gm.Vec3 = gm.vec3(4.0, 5.0, 6.0)
 
 def initialize(device: wgpu.GPUDevice, target_format: str) -> None:
     global camera, scene
 
-    # 1. Configuração da câmara e do manipulador Arcball
+    # Configuração da câmara e do manipulador Arcball
     camera = Camera3D(viewer_pos[0], viewer_pos[1], viewer_pos[2])
     arcball = camera.create_arcball()
     arcball.attach(canvas)
 
-    # 2. Fonte de luz de Spot
-    # Posicionada acima da mesa em (0.0, 5.0, 0.0), apontando diretamente para baixo (0.0, -1.0, 0.0)
-    # Ângulo de corte (cutoff_angle) de 30 graus e expoente de concentração (exponent) de 8.0
+    # Fonte de luz de Spot
     light = SpotLight(
         pos_x=0.0, pos_y=5.0, pos_z=0.0,
         dir_x=0.0, dir_y=-1.0, dir_z=0.0,
@@ -47,28 +45,28 @@ def initialize(device: wgpu.GPUDevice, target_format: str) -> None:
         space="world"
     )
 
-    # 3. Materiais Phong (Cores inspiradas na ilustração)
+    # Materiais Phong
     mat_table = PhongMaterial(0.92, 0.92, 0.94)    # Branco / Cinzento claro (Mesa)
     mat_box   = PhongMaterial(0.95, 0.70, 0.15)    # Amarelo / Dourado (Caixa)
     mat_green = PhongMaterial(0.40, 0.85, 0.40)    # Verde (Esfera menor)
     mat_red   = PhongMaterial(0.95, 0.35, 0.35)    # Vermelho (Esfera maior)
 
-    # 4. Geometrias 3D
+    # Geometrias 3D
     cube = Cube(device)
     sphere = Sphere(device)
 
-    # ==========================
-    # MODELAGEM DA MESA (exata da tarefa 2.1)
-    # ==========================
+
+    # MODELAGEM DA MESA
+
     trf_top = Transform()
     trf_top.translate(0.0, 0.0, 0.0)
     trf_top.scale(4.0, 0.2, 4.0)
     node_top = Node(None, trf_top, [mat_table], [cube])
 
-    # 4 Pernas da mesa
+    # Pernas da mesa
     leg_x = 1.75
     leg_z = 1.75
-    leg_y = -2.3  # Abaixo do tampo
+    leg_y = -2.3 
 
     legs_nodes = []
     for dx in [-leg_x, leg_x]:
@@ -78,28 +76,28 @@ def initialize(device: wgpu.GPUDevice, target_format: str) -> None:
             trf_leg.scale(0.25, 2.4, 0.25)
             legs_nodes.append(Node(None, trf_leg, [mat_table], [cube]))
 
-    # ==========================
-    # OBJETOS SOBRE A MESA (exatos da tarefa 2.1)
-    # ==========================
-    # Caixa amarela sobre a mesa (lado esquerdo)
+
+    # OBJETOS SOBRE A MESA
+    
+    # Caixa amarela sobre a mesa
     trf_box = Transform()
     trf_box.translate(-0.8, 0.2, 0.4)
     trf_box.scale(1.2, 0.6, 1.2)
     node_box = Node(None, trf_box, [mat_box], [cube])
 
-    # Esfera pequena verde (em cima da caixa amarela)
+    # Esfera pequena verde 
     trf_green_sphere = Transform()
     trf_green_sphere.translate(-0.8, 1.15, 0.4)
     trf_green_sphere.scale(0.35, 0.35, 0.35)
     node_green_sphere = Node(None, trf_green_sphere, [mat_green], [sphere])
 
-    # Esfera maior vermelha (apoiada sobre o tampo da mesa, lado direito)
+    # Esfera maior vermelha
     trf_red_sphere = Transform()
     trf_red_sphere.translate(1.0, 0.8, -0.8)
     trf_red_sphere.scale(0.6, 0.6, 0.6)
     node_red_sphere = Node(None, trf_red_sphere, [mat_red], [sphere])
 
-    # 5. Configuração do Shader 3D e Pipeline (iluminação por fragmento com spot)
+    # 5. Configuração do Shader 3D e Pipeline
     shader = Shader(device, "../shaders/ilum_frag/spot.wgsl", light=light, space="world")
     shader.set_vertex_buffers([
         {"array_stride": 3 * 4, "step_mode": "vertex",
@@ -115,7 +113,7 @@ def initialize(device: wgpu.GPUDevice, target_format: str) -> None:
     shader.add_material(mat_green)
     shader.add_material(mat_red)
 
-    # 6. Grafo de Cena
+    # Grafo de Cena
     all_objects = [node_top, *legs_nodes, node_box, node_green_sphere, node_red_sphere]
     root = Node(pipeline, nodes=all_objects)
     scene = Scene(root)
